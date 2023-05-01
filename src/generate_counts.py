@@ -32,7 +32,7 @@ connection = pg.connect(
 
 def get_outcomes():
     """ Get and return ICD codes """""
-    f = open('icd_codes.json')
+    f = open('../icd_codes.json')
     outcomes_ = json.load(f)
     f.close()
     return json.loads(outcomes_[0])
@@ -87,7 +87,7 @@ for key in diagnoses:
         print(sql_query)
         print("***************************************")
         data = pd.read_sql_query(sql_query, connection)
-        filename = f"data/{key}_diagnoses_per_county_per_day_{year}.csv"
+        filename = f"../data/{key}_diagnoses_per_county_per_day_{year}.csv"
         data.to_csv(filename)
         
         
