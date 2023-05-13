@@ -8,4 +8,4 @@
 
 module load Anaconda3/2022.05
 source activate dorieh
-python generate_counts.py
+python src/generate_counts.py
