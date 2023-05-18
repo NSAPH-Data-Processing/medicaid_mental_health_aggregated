@@ -1,11 +1,8 @@
 ## Load packages ----
-import numpy as np
 import pandas as pd
 import sshtunnel
 import psycopg2 as pg
 import os
-import seaborn as sns
-import matplotlib.pyplot as plt
 import json
 
 ## Open ssh tunnel to DB host ----
@@ -28,14 +25,6 @@ connection = pg.connect(
     password=f'{os.environ["MY_NSAPH_DB_PASSWORD"]}', 
     port=tunnel.local_bind_port
 )
-
-
-def get_outcomes():
-    """ Get and return ICD codes """""
-    f = open('icd_codes.json')
-    outcomes_ = json.load(f)
-    f.close()
-    return json.loads(outcomes_[0])
 
 def get_counts_query(diagnoses, year):
     """
@@ -76,11 +65,10 @@ def get_counts_query(diagnoses, year):
 
         """
     
-    
     return sql_query
 
+diagnoses = json.load(open('../data/input/icd_codes.json'))
 
-diagnoses = get_outcomes()
 for key in diagnoses:
     for year in range(1999,2013):
         sql_query= get_counts_query(diagnoses[key]['icd9'], year)
@@ -90,7 +78,7 @@ for key in diagnoses:
         print(sql_query)
         print("***************************************")
         data = pd.read_sql_query(sql_query, connection)
-        filename = f"data/state/{key}_diagnoses_per_county_per_day_{year}_state.csv"
+        filename = f"../data/output/{key}_diagnoses_per_county_per_day_{year}_state.csv"
         data.to_csv(filename)
         
         
