@@ -149,7 +149,7 @@ def main(args):
     merged_df['sex'] = merged_df['sex'].replace({r'.*,.*': ''}, regex=True)
     merged_df['race'] = merged_df['race'].replace({r'.*,.*': float('nan')}, regex=True)
 
-    # Remove leading zeros from residence_county
+    # Pad leading zeros from residence_county to have 5 digits in each code
     merged_df = merged_df[merged_df['residence_county'].notna()]
     merged_df['residence_county'] = merged_df['residence_county'].astype(int).astype(str).str.zfill(5)
 
