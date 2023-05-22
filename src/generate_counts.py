@@ -135,6 +135,20 @@ def main(args):
     for df in total_df[1:]:
         merged_df = pd.merge(merged_df, df, how = 'outer', on=['year', 'month', 'state', 'residence_county', 'sex', 'race', 'age_group'])
 
+    ## == Format output == ##
+    # typecast columns
+    merged_df['year'] = merged_df.year.astype(int)
+    merged_df['month'] = merged_df.month.astype(int)
+    columns = merged_df.columns.tolist()
+    hospitalizations_columns = [c for c in columns if 'hospitalizations' in c]
+    for c in hospitalizations_columns:
+        merged_df[c].fillna(0, inplace=True)
+        merged_df[c] = merged_df[c].astype('int')
+    
+    # Replace entries containing commas with NaN
+    merged_df['sex'] = merged_df['sex'].replace({r'.*,.*': ''}, regex=True)
+    merged_df['race'] = merged_df['race'].replace({r'.*,.*': float('nan')}, regex=True)
+
     print("# write output ----")
     merged_df.to_csv(f'{args.output_prefix}_{args.year}.csv', index=False)
 
