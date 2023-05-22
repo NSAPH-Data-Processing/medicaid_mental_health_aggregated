@@ -4,6 +4,7 @@ import sshtunnel
 import psycopg2 as pg
 import os
 import json
+import argparse
 
 ## Open ssh tunnel to DB host ----
 tunnel = sshtunnel.SSHTunnelForwarder(
@@ -16,7 +17,6 @@ tunnel = sshtunnel.SSHTunnelForwarder(
 
 tunnel.start()
 
-
 ## Open connection to DB ----
 connection = pg.connect(
     host='localhost',
@@ -28,58 +28,133 @@ connection = pg.connect(
 
 def get_counts_query(diagnoses, year):
     """
-    calculates the number of mental health hospitalizations per county per year
+    computes counts of mental health hospitalizations per county and strata
     """
     sql_query = f"""
-    WITH d AS ( 
-    SELECT DISTINCT
-        admission_date, 
-        bene_id
-    FROM 
-        medicaid.admissions
-    WHERE 
-        diagnosis::text[] && ARRAY[{diagnoses}]
-        AND admission_date >= '{year}-01-01' AND admission_date < '{year + 1}-01-01'
+    WITH bene AS (
+        SELECT 
+            e.bene_id,
+            e.year,
+            e.state,
+            e.fips5 as residence_county,
+            b.sex,
+            b.race_ethnicity_code as race,
+            e.year - EXTRACT(YEAR FROM b.dob) as age
+        FROM
+            medicaid.enrollments as e
+        LEFT JOIN
+            medicaid.beneficiaries as b
+        USING (bene_id)
+        WHERE
+            e.year = '{year}'
     ), 
-    y AS (
-        SELECT DISTINCT 
-            e.state,
-            e.residence_county, 
-            d.admission_date,
-            COUNT(DISTINCT d.bene_id) AS hospitalizations
-        FROM 
-            medicaid.enrollments e 
-            JOIN d ON e.bene_id = d.bene_id
-        GROUP BY 
-            e.state,
-            e.residence_county, 
-            d.admission_date
+    adm1 AS (
+        SELECT
+            a.bene_id,
+            extract(year from a.admission_date) as year,
+            extract(month from a.admission_date) as month
+        FROM
+            medicaid.admissions as a
+        WHERE
+            extract(year from a.admission_date) = '{year}' AND
+            a.diagnosis::text[] && ARRAY[{diagnoses}]
+        --LIMIT 100
+    ),
+    adm2 AS (
+        SELECT
+            a.bene_id,
+            a.year,
+            a.month,
+            b.state,
+            b.residence_county,
+            b.sex,
+            b.race,
+            CASE 
+                WHEN b.age < 18 THEN '0-17'
+                WHEN b.age >= 18 AND b.age < 25 THEN '18-24'
+                WHEN b.age >= 25 AND b.age < 35 THEN '25-34'
+                WHEN b.age >= 35 AND b.age < 45 THEN '35-44'
+                WHEN b.age >= 45 AND b.age < 55 THEN '45-54'
+                WHEN b.age >= 55 AND b.age < 65 THEN '55-64'
+                WHEN b.age >= 65 AND b.age < 75 THEN '65-74'
+                WHEN b.age >= 75 AND b.age < 85 THEN '75-84'
+                WHEN b.age >= 85 THEN '85+'
+                ELSE 'NA'
+            END AS age_group
+        FROM
+            adm1 as a
+        LEFT JOIN
+            bene as b
+        USING (bene_id, year)
     )
-    SELECT
-        y.residence_county, 
-        y.state,
-        y.admission_date,
-        y.hospitalizations
-    FROM 
-        y
-
-        """
-    
+    SELECT 
+        year,
+        month,
+        state,
+        residence_county,
+        sex,
+        race,
+        age_group,
+        count(bene_id) as hospitalizations
+    FROM
+        adm2
+    GROUP BY
+        year,
+        month,
+        state,
+        residence_county,
+        sex,
+        race,
+        age_group
+    """
     return sql_query
 
-diagnoses = json.load(open('../data/input/icd_codes.json'))
-
-for key in diagnoses:
-    for year in range(1999,2013):
-        sql_query= get_counts_query(diagnoses[key]['icd9'], year)
+def main(args):
+    print("# get diagnoses ----") 
+    diagnoses = json.load(open(args.icd_json, 'r'))
+    
+    print("# get counts ----")
+    total_df = []
+    for key in diagnoses:
+        sql_query= get_counts_query(diagnoses[key]['icd9'], args.year)
         print("***************************************")
         print(key)
-        print(year)
         print(sql_query)
         print("***************************************")
         data = pd.read_sql_query(sql_query, connection)
-        filename = f"../data/output/{key}_diagnoses_per_county_per_day_{year}_state.csv"
-        data.to_csv(filename)
-        
-        
-print("complete")
+
+        data.rename(columns={'hospitalizations':f"{key}_hospitalizations"}, inplace=True)
+        #data.dropna(subset=['state','residence_county', 'admission_date'], inplace=True)
+        total_df.append(data)
+
+    print("# merge dataframes ----")
+    # Initial DataFrame
+    merged_df = total_df[0]
+
+    # Iterate over the remaining DataFrames and merge with the accumulated merged_df
+    for df in total_df[1:]:
+        merged_df = pd.merge(merged_df, df, how = 'outer', on=['year', 'month', 'state', 'residence_county', 'sex', 'race', 'age_group'])
+
+    print("# write output ----")
+    merged_df.to_csv(f'{args.output_prefix}_{args.year}.csv', index=False)
+
+    # Close the connection
+    connection.close()
+    print("complete")
+
+if __name__ == "__main__":
+    # parse arguments
+    parser = argparse.ArgumentParser(description='Generate counts of mental health hospitalizations per county per year')
+    parser.add_argument(
+        '--year', type=int, help='year to generate counts for',
+        default=2012
+        )
+    parser.add_argument(
+        '--icd_json', type=str, help='path to json file containing diagnoses to include', 
+        default='../data/input/icd_codes.json'
+        )
+    parser.add_argument('--output_prefix', type=str, help='output file prefix', 
+        default='../data/output/scratch/mental_health_hospitalizations')
+    args = parser.parse_args()
+
+    main(args)
