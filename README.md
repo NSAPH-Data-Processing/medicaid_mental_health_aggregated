@@ -1,7 +1,5 @@
 # Medicaid Mental Health Inpatient Hospitalizations Aggregated 
 
-**FASSE Location**: /n/dominici_nsaph_l3/Lab/data_processing/medicaid_mental_health_aggregated/
-
 Generates a dataset of Medicaid hospitalizations with ICD codes from the supplemental information of doi:10.1001/jamapsychiatry.2021.4369
 
 There is a column for the total number of mental health related hospitalizations (mental_health_hospitalizations) as well as a column for each type of hospitalization (eg. mood_disorders_hospitalizations, alcohol_disorders_hospitalizations). Both primary and secondary diagnoses are included in the counts.
@@ -9,6 +7,21 @@ There is a column for the total number of mental health related hospitalizations
 Each row represents an aggregation by county by month stratified by combinations of age group/sex/race.
 
 Currently contains the years 1999-2012 but will be updated as more Medicaid data is available to the lab.
+
+### To run the code
+
+```
+export HOME_DIR=$(pwd)
+
+cd $HOME_DIR/data/output/
+mkdir /n/dominici_nsaph_l3/Lab/projects/analytic/medicaid_mental_health
+ln -s /n/dominici_nsaph_l3/Lab/projects/analytic/medicaid_mental_health .
+mkdir /n/dominici_nsaph_l3/Lab/data_processing/medicaid_mental_health_aggregated/scratch
+ln -s /n/dominici_nsaph_l3/Lab/projects/analytic/medicaid_mental_health/scratch .
+
+cd $HOME_DIR/src/
+job01=$(generate_counts.sbatch)
+```
 
 ### Data Dictionary
 
