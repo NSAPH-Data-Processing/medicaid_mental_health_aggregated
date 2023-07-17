@@ -56,7 +56,7 @@ def get_counts_query(diagnoses, year):
         FROM
             medicaid.admissions as a
         WHERE
-            extract(year from a.admission_date) = '{year}' AND
+            extract(year from a.admission_date) = '{year}'AND
             a.diagnosis::text[] && ARRAY[{diagnoses}]
         --LIMIT 100
     ),
@@ -109,6 +109,88 @@ def get_counts_query(diagnoses, year):
     """
     return sql_query
 
+def get_all_hospitalizations(year):
+    """
+    computes counts of all cause hospitalizations per county and strata
+    """
+    sql_query = f"""
+    WITH bene AS (
+        SELECT 
+            e.bene_id,
+            e.year,
+            e.state,
+            e.fips5 as residence_county,
+            b.sex,
+            b.race_ethnicity_code as race,
+            e.year - EXTRACT(YEAR FROM b.dob) as age
+        FROM
+            medicaid.enrollments as e
+        LEFT JOIN
+            medicaid.beneficiaries as b
+        USING (bene_id)
+        WHERE
+            e.year = '{year}'
+    ), 
+    adm1 AS (
+        SELECT
+            a.bene_id,
+            extract(year from a.admission_date) as year,
+            extract(month from a.admission_date) as month
+        FROM
+            medicaid.admissions as a
+        WHERE
+            extract(year from a.admission_date) = '{year}'
+        --LIMIT 100
+    ),
+    adm2 AS (
+        SELECT
+            a.bene_id,
+            a.year,
+            a.month,
+            b.state,
+            b.residence_county,
+            b.sex,
+            b.race,
+            CASE 
+                WHEN b.age < 18 THEN '0-17'
+                WHEN b.age >= 18 AND b.age < 25 THEN '18-24'
+                WHEN b.age >= 25 AND b.age < 35 THEN '25-34'
+                WHEN b.age >= 35 AND b.age < 45 THEN '35-44'
+                WHEN b.age >= 45 AND b.age < 55 THEN '45-54'
+                WHEN b.age >= 55 AND b.age < 65 THEN '55-64'
+                WHEN b.age >= 65 AND b.age < 75 THEN '65-74'
+                WHEN b.age >= 75 AND b.age < 85 THEN '75-84'
+                WHEN b.age >= 85 THEN '85+'
+                ELSE 'NA'
+            END AS age_group
+        FROM
+            adm1 as a
+        LEFT JOIN
+            bene as b
+        USING (bene_id, year)
+    )
+    SELECT 
+        year,
+        month,
+        state,
+        residence_county,
+        sex,
+        race,
+        age_group,
+        count(bene_id) as all_cause_hospitalizations
+    FROM
+        adm2
+    GROUP BY
+        year,
+        month,
+        state,
+        residence_county,
+        sex,
+        race,
+        age_group
+    """
+    return sql_query
+
 def main(args):
     print("# get diagnoses ----") 
     diagnoses = json.load(open(args.icd_json, 'r'))
@@ -126,7 +208,10 @@ def main(args):
         data.rename(columns={'hospitalizations':f"{key}_hospitalizations"}, inplace=True)
         #data.dropna(subset=['state','residence_county', 'admission_date'], inplace=True)
         total_df.append(data)
-
+    sql_query = get_all_hospitalizations(args.year)
+    print(sql_query)
+    data = pd.read_sql_query(sql_query, connection)
+    total_df.append(data)
     print("# merge dataframes ----")
     # Initial DataFrame
     merged_df = total_df[0]

@@ -6,6 +6,6 @@
 #SBATCH -t 0-05:00 # time (D-HH:MM)
 #SBATCH --array=1999-2012
 
-module load Anaconda3/2022.05
-source activate medicare_QC
-python generate_counts.py --year $SLURM_ARRAY_TASK_ID
+module load Anaconda2
+source activate dorieh
+python3 generate_counts.py --year $SLURM_ARRAY_TASK_ID
