@@ -34,6 +34,21 @@ Currently contains the years 1999-2012 but will be updated as more Medicaid data
 | suicide_self_harm_ hospitalizations                 | Count of inpatient hospitalizations with codes matching suicide/self harm           | CCS Code 662 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
 | misc_disorders_ hospitalizations                    | Count of inpatient hospitalizations with codes matching miscellaneous disorders     | CCS Code 670 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
 
+## Sample head
+
+The sample shown is filled with fake values.
+
+```
+residence_county,year,month,state,sex,race,age_group,all_cause_hospitalizations,mental_health_hospitalizations,adjustment_reaction_hospitalizations,anxiety_disorders_hospitalizations,attention_disorders_hospitalizations,developmental_disorders_hospitalizations,infancy_childhood_disorders_hospitalizations,mood_disorders_hospitalizations,personality_disorders_hospitalizations,schizophrenia_psychotic_disorders_hospitalizations,alcohol_disorders_hospitalizations,substance_disorders_hospitalizations,suicide_self_harm_hospitalizations,misc_disorders_hospitalizations
+37007,2012,1,NC,F,1,19-24,10,0,0,0,0,0,0,0,0,0,0,0,0,0
+37081,2012,1,NC,M,2,55-64,11,1,0,0,0,0,0,0,0,0,0,0,0,0
+37083,2012,1,NC,F,2,55-64,23,0,0,0,0,0,0,0,0,0,0,0,0,0
+37107,2012,1,NC,F,1,25-34,1,13,1,0,0,0,0,0,0,0,0,0,0,0
+37155,2012,1,NC,F,1,25-34,31,0,0,0,0,0,0,0,0,0,0,0,0,0
+37049,2012,2,NC,F,2,25-34,8,0,0,0,0,0,0,0,0,0,0,0,0,0
+37051,2012,2,NC,M,2,45-54,2,1,0,0,0,0,0,0,0,0,0,0,0,0
+```
+
 ## Run
 
 Clone the repository and create a conda environment.
