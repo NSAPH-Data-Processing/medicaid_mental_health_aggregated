@@ -5,26 +5,7 @@ import psycopg2 as pg
 import os
 import json
 import argparse
-
-## Open ssh tunnel to DB host ----
-tunnel = sshtunnel.SSHTunnelForwarder(
-    ('nsaph.rc.fas.harvard.edu', 22),
-    ssh_username=f'{os.environ["MY_NSAPH_SSH_USERNAME"]}',
-    ssh_private_key=f'{os.environ["HOME"]}/.ssh/id_rsa', 
-    ssh_password=f'{os.environ["MY_NSAPH_SSH_PASSWORD"]}', 
-    remote_bind_address=("localhost", 5432)
-)
-
-tunnel.start()
-
-## Open connection to DB ----
-connection = pg.connect(
-    host='localhost',
-    database='nsaph2',
-    user=f'{os.environ["MY_NSAPH_DB_USERNAME"]}',
-    password=f'{os.environ["MY_NSAPH_DB_PASSWORD"]}', 
-    port=tunnel.local_bind_port
-)
+import time
 
 def get_counts_query(diagnoses, year):
     """
@@ -37,8 +18,14 @@ def get_counts_query(diagnoses, year):
             e.year,
             e.state,
             e.fips5 as residence_county,
-            b.sex,
-            b.race_ethnicity_code as race,
+            CASE 
+                WHEN b.sex LIKE '%,%' THEN 'U'
+                ELSE b.sex
+                END AS sex_,
+            CASE 
+                WHEN b.race_ethnicity_code LIKE '%,%' THEN '9'
+                ELSE b.race_ethnicity_code
+                END AS race_,
             e.year - EXTRACT(YEAR FROM b.dob) as age
         FROM
             medicaid.enrollments as e
@@ -67,11 +54,11 @@ def get_counts_query(diagnoses, year):
             a.month,
             b.state,
             b.residence_county,
-            b.sex,
-            b.race,
+            b.sex_,
+            b.race_,
             CASE 
-                WHEN b.age < 18 THEN '0-17'
-                WHEN b.age >= 18 AND b.age < 25 THEN '18-24'
+                WHEN b.age < 19 THEN '0-18'
+                WHEN b.age >= 19 AND b.age < 25 THEN '19-24'
                 WHEN b.age >= 25 AND b.age < 35 THEN '25-34'
                 WHEN b.age >= 35 AND b.age < 45 THEN '35-44'
                 WHEN b.age >= 45 AND b.age < 55 THEN '45-54'
@@ -92,8 +79,8 @@ def get_counts_query(diagnoses, year):
         month,
         state,
         residence_county,
-        sex,
-        race,
+        sex_,
+        race_,
         age_group,
         count(bene_id) as hospitalizations
     FROM
@@ -103,8 +90,8 @@ def get_counts_query(diagnoses, year):
         month,
         state,
         residence_county,
-        sex,
-        race,
+        sex_,
+        race_,
         age_group
     """
     return sql_query
@@ -120,8 +107,14 @@ def get_all_hospitalizations(year):
             e.year,
             e.state,
             e.fips5 as residence_county,
-            b.sex,
-            b.race_ethnicity_code as race,
+            CASE 
+                WHEN b.sex LIKE '%,%' THEN 'U'
+                ELSE b.sex
+                END AS sex_,
+            CASE 
+                WHEN b.race_ethnicity_code LIKE '%,%' THEN '9'
+                ELSE b.race_ethnicity_code
+                END AS race_,
             e.year - EXTRACT(YEAR FROM b.dob) as age
         FROM
             medicaid.enrollments as e
@@ -149,11 +142,11 @@ def get_all_hospitalizations(year):
             a.month,
             b.state,
             b.residence_county,
-            b.sex,
-            b.race,
+            b.sex_,
+            b.race_,
             CASE 
-                WHEN b.age < 18 THEN '0-17'
-                WHEN b.age >= 18 AND b.age < 25 THEN '18-24'
+                WHEN b.age < 19 THEN '0-18'
+                WHEN b.age >= 19 AND b.age < 25 THEN '19-24'
                 WHEN b.age >= 25 AND b.age < 35 THEN '25-34'
                 WHEN b.age >= 35 AND b.age < 45 THEN '35-44'
                 WHEN b.age >= 45 AND b.age < 55 THEN '45-54'
@@ -174,8 +167,8 @@ def get_all_hospitalizations(year):
         month,
         state,
         residence_county,
-        sex,
-        race,
+        sex_,
+        race_,
         age_group,
         count(bene_id) as all_cause_hospitalizations
     FROM
@@ -185,18 +178,60 @@ def get_all_hospitalizations(year):
         month,
         state,
         residence_county,
-        sex,
-        race,
+        sex_,
+        race_,
         age_group
     """
     return sql_query
 
 def main(args):
-    print("# get diagnoses ----") 
-    diagnoses = json.load(open(args.icd_json, 'r'))
-    
-    print("# get counts ----")
+
+    print("## Connecting to database ----")
+    print("## Open ssh tunnel to DB host ----")
+
+    success = False
+    attempts = 0
+
+    while not success:
+        try:
+            tunnel = sshtunnel.SSHTunnelForwarder(
+                ('nsaph.rc.fas.harvard.edu', 22),
+                ssh_username=f'{os.environ["MY_NSAPH_SSH_USERNAME"]}',
+                ssh_private_key=f'{os.environ["HOME"]}/.ssh/id_rsa', 
+                ssh_password=f'{os.environ["MY_NSAPH_SSH_PASSWORD"]}', 
+                remote_bind_address=("localhost", 5432)
+            )
+
+            tunnel.start()
+
+            print("## Open connection to DB ----")
+            connection = pg.connect(
+                host='localhost',
+                database='nsaph2',
+                user= f'{os.environ["MY_NSAPH_DB_USERNAME"]}',
+                password=f'{os.environ["MY_NSAPH_DB_PASSWORD"]}', 
+                port=tunnel.local_bind_port
+            )
+            success = True
+        except:
+            attempts += 1
+            print(f"## Failed to connect to DB, attempt {attempts} ----")
+            if attempts > 10:
+                raise Exception("## Failed to connect to DB ----")
+            time.sleep(5)
+
     total_df = []
+
+    print("# get all cause hospitalizations ----")
+    sql_query = get_all_hospitalizations(args.year)
+    print(sql_query)
+    data = pd.read_sql_query(sql_query, connection)
+    total_df.append(data)
+
+    print("# get mental_health counts ----")
+    # get diagnoses ----
+    diagnoses = json.load(open(args.icd_json, 'r'))
+
     for key in diagnoses:
         sql_query= get_counts_query(diagnoses[key]['icd9'], args.year)
         print("***************************************")
@@ -208,10 +243,7 @@ def main(args):
         data.rename(columns={'hospitalizations':f"{key}_hospitalizations"}, inplace=True)
         #data.dropna(subset=['state','residence_county', 'admission_date'], inplace=True)
         total_df.append(data)
-    sql_query = get_all_hospitalizations(args.year)
-    print(sql_query)
-    data = pd.read_sql_query(sql_query, connection)
-    total_df.append(data)
+
     print("# merge dataframes ----")
     # Initial DataFrame
     merged_df = total_df[0]
@@ -224,19 +256,29 @@ def main(args):
     # typecast columns
     merged_df['year'] = merged_df.year.astype(int)
     merged_df['month'] = merged_df.month.astype(int)
+
+    merged_df['state'] = merged_df.state.astype(str)
+
+    merged_df.rename(columns={'sex_': 'sex', 'race_': 'race'}, inplace=True)
+    merged_df['sex'] = merged_df.sex.astype(str)
+    merged_df['race'] = merged_df.race.astype(int)
+
+    merged_df['age_group'] = merged_df.age_group.astype(str)
+
     columns = merged_df.columns.tolist()
     hospitalizations_columns = [c for c in columns if 'hospitalizations' in c]
     for c in hospitalizations_columns:
         merged_df[c].fillna(0, inplace=True)
         merged_df[c] = merged_df[c].astype('int')
+    merged_df['all_cause_hospitalizations'] = merged_df['all_cause_hospitalizations'].astype('int')
     
-    # Replace entries containing commas with NaN
-    merged_df['sex'] = merged_df['sex'].replace({r'.*,.*': ''}, regex=True)
-    merged_df['race'] = merged_df['race'].replace({r'.*,.*': float('nan')}, regex=True)
-
     # Pad leading zeros from residence_county to have 5 digits in each code
     merged_df = merged_df[merged_df['residence_county'].notna()]
     merged_df['residence_county'] = merged_df['residence_county'].astype(int).astype(str).str.zfill(5)
+
+    # # Replace entries containing commas with NaN
+    # merged_df['sex'] = merged_df['sex'].replace({r'.*,.*': ''}, regex=True)
+    # merged_df['race'] = merged_df['race'].replace({r'.*,.*': float('nan')}, regex=True)
 
     print("# write output ----")
     merged_df.to_csv(f'{args.output_prefix}_{args.year}.csv', index=False)
