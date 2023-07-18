@@ -17,22 +17,22 @@ Currently contains the years 1999-2012 but will be updated as more Medicaid data
 | month                                              | 1-12                                                                                |                                                                                                                                   |
 | state                                              | State of residence                                                                  | [https://resdac.org/cms-data/variables/state](https://resdac.org/cms-data/variables/state)                                        |
 | residence_county                                   | Five digit residence county of beneficiaries                                        | FIPS5 code https://transition.fcc.gov/oet/info/maps/census/fips/fips.txt                                                          |
-| sex                                                | Sex of beneficiaries 0/1                                                            | [https://resdac.org/cms-data/variables/sex](https://resdac.org/cms-data/variables/sex)                                            |
-| race                                               | Race of beneficiaries                                                               | If NA, the beneficiary had inconsistently coded race across years<br>https://resdac.org/cms-data/variables/raceethnicity-msis     |
-| age_group                                          | Age group of beneficiaries                                                          | Groups: 0-17, 18-24, 25-34, 35-44, 45-54, 55-64, 65-74, 75-84, 85+                                                                |
-| mental_health_hospitalizations                     | Count of inpatient hospitalizations with codes matching any mental health condition | Matching any ICD code from the supplemental information in the following publication:<br><br>doi:10.1001/jamapsychiatry.2021.4369 |
+| sex                                                | Sex of beneficiaries. Inconsistent race codes across years are classified as U                                                            | https://resdac.org/cms-data/variables/raceethnicity-msis                                            |
+| race                                               | Race of beneficiaries. Inconsistent race codes across years are classified as 9 | https://resdac.org/cms-data/variables/raceethnicity-msis     |
+| age_group                                          | Age group of beneficiaries                                                          | Groups: 0-18, 19-24, 25-34, 35-44, 45-54, 55-64, 65-74, 75-84, 85+                                                                |
+| mental_health_ hospitalizations                     | Count of inpatient hospitalizations with codes matching any mental health condition | Matching any ICD code from the supplemental information in the following publication:<br><br>doi:10.1001/jamapsychiatry.2021.4369 |
 | adjustment_reaction_hospitalizations               | Count of inpatient hospitalizations with codes matching adjustment reactions        | CCS Code 650 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| anxiety_disorders_hospitalizations                 | Count of inpatient hospitalizations with codes matching anxiety disorders           | CCS Code 651 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| attention_disorders_hospitalizations               | Count of inpatient hospitalizations with codes matching attention disorders         | CCS Code 652 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| developmental_disorders_hospitalizations           | Count of inpatient hospitalizations with codes matching developmental disorders     | CCS Code 654 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| infancy_childhood_disorders_hospitalizations       | Count of inpatient hospitalizations with codes matching infancy/childhood disorders | CCS Code 655 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| mood_disorders_hospitalizations                    | Count of inpatient hospitalizations with codes matching mood disorders              | CCS Code 657 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| personality_disorders_hospitalizations             | Count of inpatient hospitalizations with codes matching personality disorders       | CCS Code 658 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| schizophrenia_psychotic_disorders_hospitalizations | Count of inpatient hospitalizations with codes matching schizophrenia disorders     | CCS Code 659 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| alcohol_disorders_hospitalizations                 | Count of inpatient hospitalizations with codes matching alcohol disorders           | CCS Code 660 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| substance_disorders_hospitalizations               | Count of inpatient hospitalizations with codes matching any substance disorders     | CCS Code 661 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| suicide_self_harm_hospitalizations                 | Count of inpatient hospitalizations with codes matching suicide/self harm           | CCS Code 662 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
-| misc_disorders_hospitalizations                    | Count of inpatient hospitalizations with codes matching miscellaneous disorders     | CCS Code 670 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| anxiety_disorders_ hospitalizations                 | Count of inpatient hospitalizations with codes matching anxiety disorders           | CCS Code 651 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| attention_disorders_ hospitalizations               | Count of inpatient hospitalizations with codes matching attention disorders         | CCS Code 652 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| developmental_disorders_ hospitalizations           | Count of inpatient hospitalizations with codes matching developmental disorders     | CCS Code 654 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| infancy_childhood_disorders_ hospitalizations       | Count of inpatient hospitalizations with codes matching infancy/childhood disorders | CCS Code 655 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| mood_disorders_ hospitalizations                    | Count of inpatient hospitalizations with codes matching mood disorders              | CCS Code 657 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| personality_disorders_ hospitalizations             | Count of inpatient hospitalizations with codes matching personality disorders       | CCS Code 658 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| schizophrenia_psychotic_disorders_ hospitalizations | Count of inpatient hospitalizations with codes matching schizophrenia disorders     | CCS Code 659 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| alcohol_disorders_ hospitalizations                 | Count of inpatient hospitalizations with codes matching alcohol disorders           | CCS Code 660 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| substance_disorders_ hospitalizations               | Count of inpatient hospitalizations with codes matching any substance disorders     | CCS Code 661 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| suicide_self_harm_ hospitalizations                 | Count of inpatient hospitalizations with codes matching suicide/self harm           | CCS Code 662 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+| misc_disorders_ hospitalizations                    | Count of inpatient hospitalizations with codes matching miscellaneous disorders     | CCS Code 670 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
 
 ## Run
 
@@ -73,8 +73,16 @@ The README.md files inside the `/data` subfolders contain path documentation for
 
 ### Pipeline
 
-To run the pipeline of all the files use:
+Run the script for all years:
 
 ```
 python ./src/generate_counts.py --year <year>
 ```
+
+or run the pipeline:
+
+```
+snakemake --cores
+```
+
+In addition, `.sbatch` templates are provided for SLURM users. Be mindful that each HPC clusters has a different configuration and the `.sbatch` files might need to be modified accordingly. 
