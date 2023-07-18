@@ -1,7 +1,5 @@
 # Medicaid Mental Health Inpatient Hospitalizations Aggregated 
 
-**FASSE Location**: /n/dominici_nsaph_l3/Lab/data_processing/medicaid_mental_health_aggregated/
-
 Generates a dataset of Medicaid hospitalizations with ICD codes from the supplemental information of doi:10.1001/jamapsychiatry.2021.4369
 
 There is a column for the total number of mental health related hospitalizations (mental_health_hospitalizations) as well as a column for each type of hospitalization (eg. mood_disorders_hospitalizations, alcohol_disorders_hospitalizations). Both primary and secondary diagnoses are included in the counts.
@@ -35,3 +33,48 @@ Currently contains the years 1999-2012 but will be updated as more Medicaid data
 | substance_disorders_hospitalizations               | Count of inpatient hospitalizations with codes matching any substance disorders     | CCS Code 661 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
 | suicide_self_harm_hospitalizations                 | Count of inpatient hospitalizations with codes matching suicide/self harm           | CCS Code 662 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
 | misc_disorders_hospitalizations                    | Count of inpatient hospitalizations with codes matching miscellaneous disorders     | CCS Code 670 doi:10.1001/jamapsychiatry.2021.4369                                                                                 |
+
+## Run
+
+Clone the repository and create a conda environment.
+
+```bash
+git clone <https://github.com/<user>/repo>
+cd <repo>
+
+conda env create -f requirements.yml
+conda activate <env_name>
+```
+
+It is also possible to use `mamba`.
+
+```bash
+mamba env create -f requirements.yml
+mamba activate <env_name>
+```
+
+### Entrypoints
+
+Add symlinks to input, intermediate and output folders inside the corresponding `/data` subfolders.
+
+For example:
+
+```
+export HOME_DIR=$(pwd)
+
+cd $HOME_DIR/data/input/ .
+ln -s <input_path> .
+
+cd $HOME_DIR/data/output/
+ln -s <output_path> .
+```
+
+The README.md files inside the `/data` subfolders contain path documentation for NSAPH internal purposes.
+
+### Pipeline
+
+To run the pipeline of all the files use:
+
+```
+python ./src/generate_counts.py --year <year>
+```

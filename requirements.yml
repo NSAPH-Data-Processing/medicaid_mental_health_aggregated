@@ -1,0 +1,19 @@
+name: data_processing_env_v1
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - sshtunnel=0.4.0
+  - psycopg2=2.9.3
+  - pyarrow=11.0.0
+  - python-duckdb=0.8.1
+  - pip=23.1.2
+  - pip:
+    - pandas==2.0.3
+    - numpy==1.25.1
+    - matplotlib==3.7.2
+    - seaborn==0.12.2
+    - altair==5.0.1
+    - ipykernel==6.24.0
+    - snakemake==7.30.1
