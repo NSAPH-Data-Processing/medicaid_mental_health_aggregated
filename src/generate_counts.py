@@ -45,7 +45,7 @@ def get_counts_query(diagnoses, year):
         WHERE
             extract(year from a.admission_date) = '{year}'AND
             a.diagnosis::text[] && ARRAY[{diagnoses}]
-        --LIMIT 100
+        -- LIMIT 100
     ),
     adm2 AS (
         SELECT
@@ -133,7 +133,7 @@ def get_all_hospitalizations(year):
             medicaid.admissions as a
         WHERE
             extract(year from a.admission_date) = '{year}'
-        --LIMIT 100
+        -- LIMIT 100
     ),
     adm2 AS (
         SELECT
@@ -220,13 +220,13 @@ def main(args):
                 raise Exception("## Failed to connect to DB ----")
             time.sleep(5)
 
-    total_df = []
+    total_data = []
 
     print("# get all cause hospitalizations ----")
     sql_query = get_all_hospitalizations(args.year)
     print(sql_query)
     data = pd.read_sql_query(sql_query, connection)
-    total_df.append(data)
+    total_data.append(data)
 
     print("# get mental_health counts ----")
     # get diagnoses ----
@@ -242,50 +242,58 @@ def main(args):
 
         data.rename(columns={'hospitalizations':f"{key}_hospitalizations"}, inplace=True)
         #data.dropna(subset=['state','residence_county', 'admission_date'], inplace=True)
-        total_df.append(data)
+        total_data.append(data)
 
     print("# merge dataframes ----")
     # Initial DataFrame
-    merged_df = total_df[0]
+    df = total_data[0]
 
-    # Iterate over the remaining DataFrames and merge with the accumulated merged_df
-    for df in total_df[1:]:
-        merged_df = pd.merge(merged_df, df, how = 'outer', on=['year', 'month', 'state', 'residence_county', 'sex', 'race', 'age_group'])
+    # Iterate over the remaining DataFrames and merge with the accumulated df
+    for data in total_data[1:]:
+        df = pd.merge(df, data, how = 'outer', on=['year', 'month', 'state', 'residence_county', 'sex_', 'race_', 'age_group'])
 
     ## == Format output == ##
     # typecast columns
-    merged_df['year'] = merged_df.year.astype(int)
-    merged_df['month'] = merged_df.month.astype(int)
+    df['year'] = df.year.astype(int)
+    df['month'] = df.month.astype(int)
 
-    merged_df['state'] = merged_df.state.astype(str)
+    df['state'] = df.state.astype(str)
 
-    merged_df.rename(columns={'sex_': 'sex', 'race_': 'race'}, inplace=True)
-    merged_df['sex'] = merged_df.sex.astype(str)
-    merged_df['race'] = merged_df.race.astype(int)
+    df.rename(columns={'sex_': 'sex', 'race_': 'race'}, inplace=True)
+    df['sex'] = df.sex.astype(str)
+    df['race'] = df.race.astype(int)
 
-    merged_df['age_group'] = merged_df.age_group.astype(str)
+    df['age_group'] = df.age_group.astype(str)
 
-    columns = merged_df.columns.tolist()
+    columns = df.columns.tolist()
     hospitalizations_columns = [c for c in columns if 'hospitalizations' in c]
     for c in hospitalizations_columns:
-        merged_df[c].fillna(0, inplace=True)
-        merged_df[c] = merged_df[c].astype('int')
-    merged_df['all_cause_hospitalizations'] = merged_df['all_cause_hospitalizations'].astype('int')
+        df[c].fillna(0, inplace=True)
+        df[c] = df[c].astype('int')
+    df['all_cause_hospitalizations'] = df['all_cause_hospitalizations'].astype('int')
     
     # Pad leading zeros from residence_county to have 5 digits in each code
-    merged_df = merged_df[merged_df['residence_county'].notna()]
-    merged_df['residence_county'] = merged_df['residence_county'].astype(int).astype(str).str.zfill(5)
+    df = df[df['residence_county'].notna()]
+    df['residence_county'] = df['residence_county'].astype(int).astype(str).str.zfill(5)
 
     # # Replace entries containing commas with NaN
-    # merged_df['sex'] = merged_df['sex'].replace({r'.*,.*': ''}, regex=True)
-    # merged_df['race'] = merged_df['race'].replace({r'.*,.*': float('nan')}, regex=True)
+    # df['sex'] = df['sex'].replace({r'.*,.*': ''}, regex=True)
+    # df['race'] = df['race'].replace({r'.*,.*': float('nan')}, regex=True)
 
-    print("# write output ----")
-    merged_df.to_csv(f'{args.output_prefix}_{args.year}.csv', index=False)
-
-    # Close the connection
+    print("Close the connection and tunnel ----")
     connection.close()
-    print("complete")
+    tunnel.stop()
+
+    print("## Writing output ----")
+    df = df.set_index(['residence_county'])
+
+    output_file = f"{args.output_prefix}_{args.year}.{args.output_format}"
+    if args.output_format == "parquet":
+        df.to_parquet(output_file)
+    elif args.output_format == "csv":
+        df.to_csv(output_file)
+
+    print(f"## Output written to {output_file}")
 
 if __name__ == "__main__":
     # parse arguments
@@ -298,8 +306,12 @@ if __name__ == "__main__":
         '--icd_json', type=str, help='path to json file containing diagnoses to include', 
         default='../data/input/icd_codes.json'
         )
+    parser.add_argument("--output_format", 
+                        default = "csv", 
+                        choices=["parquet", "csv"]
+                       ) 
     parser.add_argument('--output_prefix', type=str, help='output file prefix', 
-        default='../data/output/scratch/mental_health_hospitalizations')
+        default='../data/output/medicaid_mental_health/mental_health_hospitalizations')
     args = parser.parse_args()
 
     main(args)
