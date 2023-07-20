@@ -87,6 +87,20 @@ ln -s <output_path> .
 
 The README.md files inside the `/data` subfolders contain path documentation for NSAPH internal purposes.
 
+### DB access
+
+To obtain access to the DB, request the following to an admin (Github authors) and store them as environment variables.
+
+```bash
+# variables
+export MY_NSAPH_SSH_USERNAME="your_ssh_user_to_dedicated_node"
+export MY_NSAPH_SSH_PASSWORD="your_ssh_password_to_dedicated_node"
+export MY_NSAPH_DB_USERNAME="your_db_user"
+export MY_NSAPH_DB_PASSWORD="your_db_password"
+```
+
+
+
 ### Pipeline
 
 Run the script for all years:
