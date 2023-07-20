@@ -8,7 +8,7 @@ Each row represents an aggregation by county by month stratified by combinations
 
 Currently contains the years 1999-2012 but will be updated as more Medicaid data is available to the lab.
 
-### Data Dictionary
+## Data Dictionary
 
 
 | Column Name | Description | Notes |
